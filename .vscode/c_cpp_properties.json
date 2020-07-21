@@ -2,7 +2,10 @@
     "configurations": [
         {
             "name": "driver",
-            "defines": [],
+            "defines": [
+                "__KERNEL__",
+                "MODULE"
+            ],
             "compilerPath": "/usr/bin/gcc",
             "cStandard": "c11",
             "cppStandard": "c++14",
@@ -17,6 +20,9 @@
                 "/usr/src/linux-headers-5.4.0-39-generic/include/generated/uapi",
                 "/usr/src/linux-headers-5.4.0-39-generic/ubuntu/include",
                 "/usr/lib/gcc/x86_64-linux-gnu/9/include"
+            ],
+            "compilerArgs": [
+                "-nostdinc"
             ]
         }
     ],

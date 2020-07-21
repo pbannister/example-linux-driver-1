@@ -1,6 +1,14 @@
+#include <linux/fs.h>
 
-#include <linux/init.h>
-#include <linux/module.h>
-#include <linux/kernel.h>
+#include "common.h"
 
-// Nothing here as yet.
+static int file_open(struct inode* p_inode , struct file* p_file) {
+    return 0;
+}
+
+struct file_operations driver_operations_g = {
+    .open = file_open,
+    // .release = file_release,
+    // .mmap = file_mmap,
+
+};

@@ -3,31 +3,30 @@
 #include <linux/module.h>
 #include <linux/kernel.h>
 
-#include "version.h"
+#include "common.h"
 
-#define LOG_NAME    "EXAMPLE1: "
-#define LOG_ERR     KERN_ERR LOG_NAME 
-#define LOG_WARNING KERN_WARNING LOG_NAME 
-#define LOG_NOTICE  KERN_NOTICE LOG_NAME 
-#define LOG_INFO    KERN_INFO LOG_NAME 
-#define LOG_DEBUG   KERN_DEBUG LOG_NAME 
+static char* flags1 = "(none)";
+static unsigned flags2 = 123;
 
-// static const char* driver_name = "ex1";
-// static unsigned driver_number = 0;
+module_param(flags1, charp, 0644);
+module_param(flags2, uint, 0644);
+MODULE_PARM_DESC(flags1, "Set of character flags.");
+MODULE_PARM_DESC(flags2, "Set of bit flags.");
 
-// MODULE_PARM_DESC(driver_name, "Name displayed in kernel log.");
-// MODULE_PARM_DESC(driver_number, "Number of no meaning.");
+extern struct file_operations driver_operations_g;
 
 static int __init driver_init(void) {
+    pr_alert("Loaded driver1 init.\n");
     return 0;
 }
 
 static void __exit driver_exit(void) {
+    pr_alert("Unloaded driver1 exit.\n");
 }
 
 MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Preston L. Bannister");
-MODULE_DESCRIPTION("Example driver for FPGA firmware.");
+MODULE_AUTHOR("Preston L. Bannister <preston@bannister.us>");
+MODULE_DESCRIPTION("Description of example driver.");
 MODULE_VERSION(VERSION_OF_MODULE);
 
 module_init(driver_init);
