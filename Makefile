@@ -35,7 +35,7 @@ else
 #	Build rules used before invoking the kernel build system.
 #	Support for typical development activities.
 
-# Kernel version of target system (if development not target).
+# Kernel version of target system (if development system not target).
 K_EXPECT := 5.4.0-39-generic
 
 # Kernel version of development system.
