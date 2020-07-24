@@ -23,6 +23,11 @@ static char* name = DEVICE_NAME;
 module_param(name, charp, 0444);    // Only set on module load.
 MODULE_PARM_DESC(name, "Device name as registered to kernel.");
 
+// Size (in MB) for large DMA buffers.
+static unsigned buffer_mb = 256;
+module_param(buffer_mb, uint, 0644);
+MODULE_PARM_DESC(buffer_mb, "Size (in MB) for large DMA buffers."); 
+
 // Example parameters
 static char* flags1 = "(none)";
 static unsigned flags2 = 456;
@@ -33,7 +38,15 @@ module_param(flags2, uint, 0644);
 MODULE_PARM_DESC(flags1, "Set of character flags.");
 MODULE_PARM_DESC(flags2, "Set of bit flags.");
 
-extern struct file_operations driver_operations_g;
+extern struct file_operations example_driver_operations_g;
+
+//
+//
+//
+
+unsigned example_parameter_buffer_mb_get(void) {
+    return buffer_mb;
+}
 
 //
 //
@@ -87,7 +100,7 @@ static int __init example_driver_init(void) {
     }
     {
         // Register/obtain the major device number.
-        int v = register_chrdev(major, name, &driver_operations_g);
+        int v = register_chrdev(major, name, &example_driver_operations_g);
         if (v < 0) {
             printk(LOG_ERROR "Cannot register device name: %s major: %d!", name, major);
             return v;

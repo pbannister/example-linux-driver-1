@@ -24,6 +24,16 @@ static inline int file_has_flags(struct file* p_file, int flags) {
 //
 //
 
+static struct status_s {
+    uint32_t version;
+} status_driver = {
+    .version = VERSION_ID_MODULE,
+};
+
+//
+//
+//
+
 typedef uint32_t* uint32_p;
 
 typedef struct mmap_buffer_s {
@@ -61,17 +71,33 @@ static mmap_buffer_t buffer_antenna2;
 static mmap_buffer_t buffer_antenna3;
 static mmap_buffer_t buffer_antenna4;
 
+enum BUFFER_SIZES {
+    BUFFER_SIZE_REQUEST = (1 << 16),
+    BUFFER_SIZE_RESPONSE = (1 << 16),
+};
+
+// Fetch short name / static module parameter value.
+extern unsigned example_parameter_buffer_mb_get(void);
+
 //
 //
 //
 
 static int device_open_control(struct file* p_file) {
-    buffer_request.size_buffer = (1 << 16);
-    buffer_response.size_buffer = (1 << 16);
-    buffer_antenna1.size_buffer = 128 * (1 << 20);
-    buffer_antenna2.size_buffer = 128 * (1 << 20);
-    buffer_antenna3.size_buffer = 128 * (1 << 20);
-    buffer_antenna4.size_buffer = 128 * (1 << 20);
+    {
+        // Module parameter may have changed.
+        unsigned buffer_mb = example_parameter_buffer_mb_get();
+        size_t size_buffer = buffer_mb;
+        size_buffer <<= 20;
+        printk(LOG_INFO "DMA buffer size (MB): %u\n", buffer_mb);
+        // Specify actual buffer sizes.
+        buffer_request.size_buffer = BUFFER_SIZE_REQUEST;
+        buffer_response.size_buffer = BUFFER_SIZE_RESPONSE;
+        buffer_antenna1.size_buffer = size_buffer;
+        buffer_antenna2.size_buffer = size_buffer;
+        buffer_antenna3.size_buffer = size_buffer;
+        buffer_antenna4.size_buffer = size_buffer;
+    }
     // Allocate buffers.
     if (!mmap_buffer_allocate(&buffer_request)) {
         printk(LOG_ERROR "Cannot allocate mmap memory for request!\n");
@@ -87,6 +113,12 @@ static int device_open_control(struct file* p_file) {
         printk(LOG_ERROR "Cannot allocate mmap memory for antenna4!\n");
     } else {
         // All buffers allocated - success!
+        printk(LOG_INFO "Size of request  buffer : %ld\n", buffer_request.size_buffer);
+        printk(LOG_INFO "Size of response buffer : %ld\n", buffer_response.size_buffer);
+        printk(LOG_INFO "Size of antenna1 buffer : %ld\n", buffer_antenna1.size_buffer);
+        printk(LOG_INFO "Size of antenna2 buffer : %ld\n", buffer_antenna2.size_buffer);
+        printk(LOG_INFO "Size of antenna3 buffer : %ld\n", buffer_antenna3.size_buffer);
+        printk(LOG_INFO "Size of antenna4 buffer : %ld\n", buffer_antenna4.size_buffer);
         return 0;
     }
     mmap_buffer_free(&buffer_request);
@@ -121,9 +153,9 @@ static int device_open(struct inode* p_inode, struct file* p_file) {
 	printk(LOG_INFO "Device minor: %3d inode: %px file: %px -- OPEN\n", minor, p_inode, p_file);
 	switch (minor) {
     case MINOR_CONTROL:
-        if (!file_has_flags(p_file, O_RDWR)) {
-            return -EINVAL;
-        }
+        // if (!file_has_flags(p_file, O_RDWR)) {
+        //     return -EINVAL;
+        // }
         return device_open_control(p_file);
     case MINOR_REQUEST:
         if (!file_has_flags(p_file, O_RDWR)) {
@@ -167,7 +199,7 @@ static int device_open(struct inode* p_inode, struct file* p_file) {
 
 static int device_release(struct inode* p_inode, struct file* p_file) {
 	int minor = iminor(p_inode);
-	printk(LOG_INFO "Device minor: %3d file: %px -- CLOSE\n", minor, p_file);
+    printk(LOG_INFO "Device minor: %3d inode: %px file: %px -- CLOSE\n", minor, p_inode, p_file);
 	switch (minor) {
     case MINOR_CONTROL:
         return device_release_control(p_file);
@@ -176,29 +208,39 @@ static int device_release(struct inode* p_inode, struct file* p_file) {
 }
 
 //
-//
+//  Note that none of the device file support non-zero offsets (by design).
+//  File position is always zero (at start).
+//  Seek to end does report file (buffer) size.
 //
 
 static loff_t device_seek(struct file* p_file, loff_t n_offset, int whence) {
 	int minor = iminor(p_file->f_inode);
     p_file->f_pos = 0; // We do not use the file position.
+    if (0 != n_offset) {
+        // We do not support non-zero seek offsets.
+        return -EINVAL;
+    }
+    if (SEEK_END != whence) {
+        // We only support seek to end (to report size).
+        return -EINVAL;
+    }
 	switch (minor) {
     case MINOR_CONTROL:
-        return 0;
+        return sizeof(uint32_t);
     case MINOR_REQUEST:
-        return 0;
+        return buffer_request.size_buffer;
     case MINOR_RESPONSE:
-        return 0;
+        return buffer_response.size_buffer;
     case MINOR_STATUS:
-        return 0;
+        return sizeof(status_driver);
     case MINOR_ANTENNA1:
-        return 0;
+        return buffer_antenna1.size_buffer;
     case MINOR_ANTENNA2:
-        return 0;
+        return buffer_antenna2.size_buffer;
     case MINOR_ANTENNA3:
-        return 0;
+        return buffer_antenna3.size_buffer;
     case MINOR_ANTENNA4:
-        return 0;
+        return buffer_antenna4.size_buffer;
     }
     return -EINVAL;
 }
@@ -209,6 +251,7 @@ static loff_t device_seek(struct file* p_file, loff_t n_offset, int whence) {
 
 static int device_mmap(struct file* p_file, struct vm_area_struct* p_vm) {
 	int minor = iminor(p_file->f_inode);
+    printk(LOG_INFO "mmap start: %08lx end: %08lx\n", p_vm->vm_start, p_vm->vm_end);
 	switch (minor) {
     case MINOR_REQUEST:
         return 0;
@@ -342,7 +385,7 @@ static ssize_t device_write(struct file* p_file, const char __user* p_user, size
 //
 //
 
-struct file_operations driver_operations_g = {
+struct file_operations example_driver_operations_g = {
     .owner = THIS_MODULE,
     .open = device_open,
     .release = device_release,
