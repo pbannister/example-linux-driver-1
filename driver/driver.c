@@ -15,7 +15,7 @@
 //
 //static unsigned major = 60;
 static unsigned major = 0;  // Dynamic allocation of major device number.
-module_param(major, uint, 0444);    // Only set on module load.
+module_param(major, uint, 0444);
 MODULE_PARM_DESC(major, "Major device number");
 
 // Device name given to Linux kernel.

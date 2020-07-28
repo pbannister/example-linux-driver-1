@@ -39,6 +39,7 @@ typedef uint32_t* uint32_p;
 typedef struct mmap_buffer_s {
     size_t size_buffer;
     uint32_p p_buffer;
+    dma_addr_t dma_handle;
 } mmap_buffer_t;
 
 typedef mmap_buffer_t* mmap_buffer_p;
@@ -49,14 +50,35 @@ static inline bool mmap_buffer_allocate(mmap_buffer_p p) {
 }
 
 static inline bool mmap_buffer_allocate_dma(mmap_buffer_p p) {
-    p->p_buffer = kzalloc(p->size_buffer, GFP_KERNEL);
+    // Generally follow the pattern of dma_alloc_coherent().
+    struct device* p_device = 0;
+    size_t size_wanted = p->size_buffer;
+    gfp_t gfp = GFP_KERNEL;
+    unsigned long attrs = 0;
+    {
+        const struct dma_map_ops* ops = dma_ops;
+        if (!ops->alloc) {
+            return false;
+        }
+        p->p_buffer = ops->alloc(p_device, size_wanted, &p->dma_handle, gfp, attrs);
+    }
+    //return dma_alloc_from_dev_coherent(p_device, size_wanted, &p->dma_handle, &p->p_buffer);
+    //p->p_buffer = dma_alloc_attrs(p_device, size_wanted, &p->dma_handle, gfp, attrs);
     return (0 != p->p_buffer);
 }
 
 static inline void mmap_buffer_free(mmap_buffer_p p) {
+    if (p->dma_handle) {
+        struct device* p_device = 0;
+        dma_free_coherent(p_device, p->size_buffer, p->p_buffer, p->dma_handle);
+        p->p_buffer = 0;
+        p->dma_handle = 0;
+        return;
+    }
     if (p->p_buffer) {
         kzfree(p->p_buffer);
         p->p_buffer = 0;
+        return;
     }
 }
 
@@ -97,6 +119,12 @@ static int device_open_control(struct file* p_file) {
         buffer_antenna2.size_buffer = size_buffer;
         buffer_antenna3.size_buffer = size_buffer;
         buffer_antenna4.size_buffer = size_buffer;
+        buffer_request.dma_handle = 0;
+        buffer_response.dma_handle = 0;
+        buffer_antenna1.dma_handle = 0;
+        buffer_antenna2.dma_handle = 0;
+        buffer_antenna3.dma_handle = 0;
+        buffer_antenna4.dma_handle = 0;
     }
     // Allocate buffers.
     if (!mmap_buffer_allocate(&buffer_request)) {
