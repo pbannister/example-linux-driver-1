@@ -1,5 +1,6 @@
 #include <linux/fs.h>
 #include <linux/mm.h>
+#include <linux/uaccess.h>
 #include <linux/dma-mapping.h>
 #include <linux/dma-iommu.h>
 #include "common.h"
