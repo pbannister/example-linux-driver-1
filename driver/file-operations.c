@@ -134,14 +134,20 @@ static int device_open_control(struct file* p_file) {
         // Where is our DMA memory?
         u64 pa = (1 << 30); // @1GB
         void* vp = phys_to_virt(pa);
+        struct page* p1 = virt_to_page(vp);
         u64 bus = virt_to_bus(vp);
         u64 pfn = PHYS_PFN(pa);
-        struct page* p_page = pfn_to_page(pfn);
+        struct page* p2 = pfn_to_page(pfn);
         printk(LOG_INFO "address physical : %llx\n", pa);
         printk(LOG_INFO "address virtual  : %px\n", vp);
         printk(LOG_INFO "address bus      : %llx\n", bus);
         printk(LOG_INFO "pfn              : %llx\n", pfn);
-        printk(LOG_INFO "page             : %px\n", p_page);
+        printk(LOG_INFO "page (via virt)  : %px\n", p1);
+        printk(LOG_INFO "page (via pfn)   : %px\n", p1);
+        {
+            uint32_t word0 = *(uint32_p) vp;
+            printk(LOG_INFO "word 0 of page   : %08x\n", word0);
+        }
     }
     // Allocate buffers.
     if (!mmap_buffer_allocate(&buffer_request)) {
