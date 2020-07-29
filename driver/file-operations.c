@@ -1,6 +1,7 @@
 #include <linux/fs.h>
 #include <linux/mm.h>
 #include <linux/uaccess.h>
+#include <linux/pfn_t.h>
 #include <linux/dma-mapping.h>
 #include <linux/dma-iommu.h>
 #include "common.h"
@@ -51,12 +52,12 @@ static inline bool mmap_buffer_allocate(mmap_buffer_p p) {
 }
 
 static inline bool mmap_buffer_allocate_dma(mmap_buffer_p p) {
-    // Generally follow the pattern of dma_alloc_coherent().
-    struct device* p_device = 0;
-    size_t size_wanted = p->size_buffer;
-    gfp_t gfp = GFP_KERNEL;
-    unsigned long attrs = 0;
-    {
+    if (0) {
+        // Generally follow the pattern of dma_alloc_coherent().
+        struct device* p_device = 0;
+        size_t size_wanted = p->size_buffer;
+        gfp_t gfp = GFP_KERNEL;
+        unsigned long attrs = 0;
         const struct dma_map_ops* ops = dma_ops;
         if (!ops->alloc) {
             return false;
@@ -126,6 +127,21 @@ static int device_open_control(struct file* p_file) {
         buffer_antenna2.dma_handle = 0;
         buffer_antenna3.dma_handle = 0;
         buffer_antenna4.dma_handle = 0;
+    }
+    {
+        // Parse kernel command line "memmap" option?
+        // Pull from mapping for /dev/pmem0?
+        // Where is our DMA memory?
+        u64 pa = (1 << 30); // @1GB
+        void* vp = phys_to_virt(pa);
+        u64 bus = virt_to_bus(vp);
+        u64 pfn = PHYS_PFN(pa);
+        struct page* p_page = pfn_to_page(pfn);
+        printk(LOG_INFO "address physical : %llx\n", pa);
+        printk(LOG_INFO "address virtual  : %px\n", vp);
+        printk(LOG_INFO "address bus      : %llx\n", bus);
+        printk(LOG_INFO "pfn              : %llx\n", pfn);
+        printk(LOG_INFO "page             : %px\n", p_page);
     }
     // Allocate buffers.
     if (!mmap_buffer_allocate(&buffer_request)) {
