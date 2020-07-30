@@ -20,6 +20,6 @@ rebuild : clean all
 
 all : build
 
-test : ; ${D_BUILD}/test-units
+test : build ; ${D_BUILD}/bin/test-device
 
 .PSEUDO: all clean clean.build build rebuild

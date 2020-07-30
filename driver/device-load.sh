@@ -51,8 +51,9 @@ echo "
 sudo mknod -m 0666 $DEVPATH/control  c $MAJOR 0
 sudo mknod -m 0666 $DEVPATH/request  c $MAJOR 1
 sudo mknod -m 0666 $DEVPATH/response c $MAJOR 2
-sudo mknod -m 0666 $DEVPATH/antenna1 c $MAJOR 3
-sudo mknod -m 0666 $DEVPATH/antenna2 c $MAJOR 4
-sudo mknod -m 0666 $DEVPATH/antenna3 c $MAJOR 5
-sudo mknod -m 0666 $DEVPATH/antenna4 c $MAJOR 6
+sudo mknod -m 0666 $DEVPATH/status   c $MAJOR 3
+sudo mknod -m 0666 $DEVPATH/antenna1 c $MAJOR 4
+sudo mknod -m 0666 $DEVPATH/antenna2 c $MAJOR 5
+sudo mknod -m 0666 $DEVPATH/antenna3 c $MAJOR 6
+sudo mknod -m 0666 $DEVPATH/antenna4 c $MAJOR 7
 ls -l $DEVPATH/*
